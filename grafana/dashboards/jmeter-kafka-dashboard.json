@@ -1,0 +1,54 @@
+{
+  "id": null,
+  "title": "JMeter & Kafka Performance Overview",
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "graph",
+      "title": "JMeter Request Rate (RPS)",
+      "targets": [
+        {
+          "expr": "rate(jmeter_samples_total[30s])",
+          "legendFormat": "Requests per second",
+          "interval": ""
+        }
+      ],
+      "datasource": "Prometheus"
+    },
+    {
+      "type": "graph",
+      "title": "Kafka Messages per Topic",
+      "targets": [
+        {
+          "expr": "sum(rate(kafka_topic_partition_current_offset[30s])) by (topic)",
+          "legendFormat": "{{topic}}"
+        }
+      ],
+      "datasource": "Prometheus"
+    },
+    {
+      "type": "graph",
+      "title": "Kafka Broker Count",
+      "targets": [
+        {
+          "expr": "kafka_brokers",
+          "legendFormat": "Brokers"
+        }
+      ],
+      "datasource": "Prometheus"
+    },
+    {
+      "type": "graph",
+      "title": "Kafka Partition Offsets",
+      "targets": [
+        {
+          "expr": "kafka_topic_partition_current_offset",
+          "legendFormat": "{{topic}} partition={{partition}}"
+        }
+      ],
+      "datasource": "Prometheus"
+    }
+  ],
+  "schemaVersion": 36,
+  "version": 1
+}

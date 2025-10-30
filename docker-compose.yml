@@ -1,0 +1,194 @@
+version: "3.8"
+
+services:
+  # -----------------
+  # MongoDB Database
+  # -----------------
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - form-app
+
+  # -----------------
+  # Zookeeper
+  # -----------------
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - form-app
+
+  # -----------------
+  # Kafka Broker
+  # -----------------
+  kafka:
+    image: wurstmeister/kafka:latest
+    ports:
+      - "9092:9092"
+      - "7071:7071"  # JMX metrics for Kafka exporter
+    environment:
+      # ----- Core broker configuration -----
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+      # ----- Optional (recommended for dev) -----
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+
+      # ----- JMX for Prometheus/Kafka Exporter -----
+      KAFKA_JMX_PORT: 7071
+      KAFKA_JMX_HOSTNAME: kafka
+
+    volumes:
+      - kafka_data:/kafka  # persist logs to avoid re-election loops
+
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - form-app
+
+
+  # -----------------
+  # Node.js Backend
+  # -----------------
+  backend:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/formdb
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      - mongo
+      - kafka
+    volumes:
+      - ./backend/wait-for-kafka.sh:/wait-for-kafka.sh:ro
+
+    entrypoint: ["./wait-for-kafka.sh", "npm", "start"]
+    networks:
+      - form-app
+
+  # -----------------
+  # React Frontend
+  # -----------------
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - form-app
+
+  # -----------------
+  # JMeter Performance Test Runner
+  # -----------------
+  jmeter:
+    build: ./jmeter
+    environment:
+      - TARGET_HOST=backend
+      - TARGET_PORT=5000
+    volumes:
+      - ./jmeter/results:/tests/results
+      - shared_data:/shared
+    depends_on:
+      - backend
+    networks:
+      - form-app
+
+  # -----------------
+  # Kafka Exporter (Prometheus metrics for Kafka)
+  # -----------------
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:latest
+    command:
+      - "--kafka.server=kafka:9092"
+    ports:
+      - "9308:9308"
+    volumes:
+      - ./backend/wait-for-kafka.sh:/wait-for-kafka.sh:ro
+    entrypoint: ["/bin/sh", "/wait-for-kafka.sh", "/bin/kafka_exporter", "--kafka.server=kafka:9092"]
+    networks:
+      - form-app
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  # -----------------
+  # Prometheus (collects metrics)
+  # -----------------
+  prometheus:
+    build:
+      context: .
+      dockerfile: Dockerfile.prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    depends_on:
+      kafka-exporter:
+        condition: service_started
+    networks:
+      - form-app
+
+  # -----------------
+  # Grafana (dashboard visualization)
+  # -----------------
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./backend/wait-for-kafka.sh:/wait-for-kafka.sh:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/etc/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+      - shared_data:/shared
+    entrypoint:
+      [
+        "/bin/sh",
+        "-c",
+        "echo '⏳ Waiting for JMeter test to start...' && \
+        until [ -f /shared/jmeter_started.flag ]; do echo 'JMeter not started yet...'; sleep 5; done; \
+        echo '✅ JMeter test started! Launching Grafana...' && exec /run.sh"
+      ]
+    networks:
+      - form-app
+    depends_on:
+      prometheus:
+        condition: service_started
+
+# -----------------
+# Volumes
+# -----------------
+volumes:
+  mongo_data:
+  kafka_data:
+  grafana_data:
+  prometheus_data:
+  shared_data:
+
+# -----------------
+# Network
+# -----------------
+networks:
+  form-app:
+    driver: bridge

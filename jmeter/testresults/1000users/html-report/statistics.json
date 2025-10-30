@@ -1,0 +1,34 @@
+{
+  "Submit Form" : {
+    "transaction" : "Submit Form",
+    "sampleCount" : 2000,
+    "errorCount" : 0,
+    "errorPct" : 0.0,
+    "meanResTime" : 1551.5905000000027,
+    "medianResTime" : 444.5,
+    "minResTime" : 6.0,
+    "maxResTime" : 7473.0,
+    "pct1ResTime" : 5117.5,
+    "pct2ResTime" : 6378.95,
+    "pct3ResTime" : 6824.99,
+    "throughput" : 61.42317496391388,
+    "receivedKBytesPerSec" : 16.7953994041952,
+    "sentKBytesPerSec" : 17.755136513006356
+  },
+  "Total" : {
+    "transaction" : "Total",
+    "sampleCount" : 2000,
+    "errorCount" : 0,
+    "errorPct" : 0.0,
+    "meanResTime" : 1551.5905000000027,
+    "medianResTime" : 444.5,
+    "minResTime" : 6.0,
+    "maxResTime" : 7473.0,
+    "pct1ResTime" : 5117.5,
+    "pct2ResTime" : 6378.95,
+    "pct3ResTime" : 6824.99,
+    "throughput" : 61.42317496391388,
+    "receivedKBytesPerSec" : 16.7953994041952,
+    "sentKBytesPerSec" : 17.755136513006356
+  }
+}

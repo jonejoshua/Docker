@@ -1,0 +1,6 @@
+FROM prom/prometheus:latest
+
+# Use --chmod to avoid permission issues on Windows bind mounts
+COPY --chmod=755 backend/wait-for-kafka.sh /wait-for-kafka.sh
+
+ENTRYPOINT ["/bin/sh", "-c", "/wait-for-kafka.sh && until nc -z kafka-exporter 9308; do echo 'Waiting for kafka-exporter...'; sleep 5; done; exec prometheus --config.file=/etc/prometheus/prometheus.yml"]
