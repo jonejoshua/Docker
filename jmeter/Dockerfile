@@ -79,7 +79,7 @@ ENTRYPOINT ["/bin/bash", "-c", "\
   echo '✅ Backend ready! Starting JMeter test...'; \
   mkdir -p /shared && touch /shared/jmeter_started.flag; \
   echo '🧪 Running JMeter test on backend: $TARGET_HOST:$TARGET_PORT'; \
-  rm -rf /tests/results/*; \
+  #rm -rf /tests/results/*; \
   jmeter -n -t /tests/form_test.jmx \
          -l /tests/results/results.jtl \
          -e -o /tests/results/html-report \
