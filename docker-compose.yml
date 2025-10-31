@@ -75,10 +75,8 @@ services:
     depends_on:
       - mongo
       - kafka
-    volumes:
-      - ./backend/wait-for-kafka.sh:/wait-for-kafka.sh:ro
 
-    entrypoint: ["./wait-for-kafka.sh", "npm", "start"]
+    entrypoint: ["/wait-for-kafka.sh", "npm", "start"]
     networks:
       - form-app
 
