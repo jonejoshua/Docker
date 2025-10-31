@@ -1,8 +1,10 @@
-#!/bin/bash
+#!/bin/sh
 set -e
-echo "â³ Waiting for Kafka to be ready..."
+
+echo "⏳ Waiting for Kafka to be ready..."
 until nc -z kafka 9092; do
   sleep 2
 done
-echo "âœ… Kafka is ready! Starting backend..."
+
+echo "✅ Kafka is ready! Starting backend..."
 exec "$@"
