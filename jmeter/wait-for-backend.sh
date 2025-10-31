@@ -1,4 +1,4 @@
-#!/bin/bash
+﻿#!/bin/bash
 set -e
 
 echo "⏳ Waiting for backend + Kafka to be ready on $TARGET_HOST:$TARGET_PORT..."
@@ -9,3 +9,4 @@ until [ "$(curl -s -o /dev/null -w '%{http_code}' http://$TARGET_HOST:$TARGET_PO
 done
 
 echo "✅ Backend + Kafka are ready! Starting JMeter test..."
+
